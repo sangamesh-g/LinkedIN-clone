@@ -20,6 +20,7 @@ from django.views.generic import TemplateView
 from django.conf import settings
 from django.conf.urls.static import static
 from accounts.views import signin_view, signup_view, logout_view
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .views import (
     index_view, main_view, network_view, jobs_view, messaging_view,
     notifications_view, profile_view, user_profile_view, search_view,
@@ -31,6 +32,11 @@ from .views import (
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('api.urls')),
+    
+    # JWT Token endpoints
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    
     path('', index_view),
     path('signin', signin_view),
     path('signup', signup_view),

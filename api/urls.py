@@ -2,6 +2,7 @@ from django.urls import include, path
 from .views import PostListCreate, PostDetail
 
 
+
 urlpatterns = [
     # Placeholder: aggregate routes from sub-apps if needed
     path('accounts/', include('accounts.urls')),

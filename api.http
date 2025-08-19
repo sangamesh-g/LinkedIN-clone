@@ -1,0 +1,8 @@
+
+POST http://127.0.0.:2000/api/token/refresh
+Content-Type: application/json
+
+{
+  "username": "sangamesh",
+  "password": "1234"
+}
