@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block title %}My Network — LinkedIn Clone{% endblock %}
+
+{% block content %}
+<div class="layout" style="display:grid; grid-template-columns:280px 1fr; gap:16px; margin:16px 0;">
+	<section>
+		<div class="card pad">
+			<h3>Manage my network</h3>
+			<ul style="list-style:none; padding:0; margin:0;">
+				<li style="border-top:1px solid #eee; padding:10px 0;">Connections</li>
+				<li style="border-top:1px solid #eee; padding:10px 0;">Following & followers</li>
+				<li style="border-top:1px solid #eee; padding:10px 0;">Groups</li>
+				<li style="border-top:1px solid #eee; padding:10px 0;">Events</li>
+				<li style="border-top:1px solid #eee; padding:10px 0;">Pages</li>
+				<li style="border-top:1px solid #eee; padding:10px 0;">Newsletters</li>
+			</ul>
+		</div>
+	</section>
+	<section>
+		<div class="card pad">
+			<h3>Invitations</h3>
+			<ul style="list-style:none; padding:0; margin:0;">
+				{% for c in incoming %}
+				<li style="border-top:1px solid #eee; padding:10px 0;" class="row" style="justify-content:space-between;">
+					<div>{{ c.sender.username }}</div>
+					<div>
+						<a href="/connect/accept/{{ c.id }}"><button>Accept</button></a>
+						<a href="/connect/reject/{{ c.id }}"><button class="ghost">Ignore</button></a>
+					</div>
+				</li>
+				{% empty %}
+				<li class="muted">No pending invitations</li>
+				{% endfor %}
+			</ul>
+		</div>
+		<div class="card pad" style="margin-top:12px;">
+			<h3>People you may know</h3>
+			<ul style="list-style:none; padding:0; margin:0;">
+				{% for u in suggestions %}
+				<li style="border-top:1px solid #eee; padding:10px 0;" class="row" style="justify-content:space-between;">
+					<a href="/u/{{ u.username }}">{{ u.username }}</a>
+					<a href="/connect/send/{{ u.id }}"><button>Connect</button></a>
+				</li>
+				{% empty %}
+				<li class="muted">No suggestions right now.</li>
+				{% endfor %}
+			</ul>
+		</div>
+	</section>
+</div>
+{% endblock %}
+
+

@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block title %}Jobs — LinkedIn Clone{% endblock %}
+
+{% block content %}
+<div class="layout" style="display:grid; grid-template-columns:280px 1fr; gap:16px; margin:16px 0;">
+	<section>
+		<div class="card pad">
+			<h3>Preferences</h3>
+			<div class="muted">Tell us where and what you're looking for.</div>
+		</div>
+	</section>
+	<section>
+		<div class="card pad">
+			<h3>Top job picks for you</h3>
+			<ul style="list-style:none; padding:0; margin:0;">
+				{% for j in jobs %}
+				<li style="border-top:1px solid #eee; padding:10px 0;">
+					<div style="font-weight:600;">{{ j.title }}</div>
+					<div class="muted" style="font-size:12px;">{{ j.company }} — {{ j.location }}</div>
+				</li>
+				{% empty %}
+				<li class="muted">No jobs yet.</li>
+				{% endfor %}
+			</ul>
+		</div>
+	</section>
+</div>
+{% endblock %}
+
+

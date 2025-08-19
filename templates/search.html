@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block title %}Search — LinkedIn Clone{% endblock %}
+
+{% block content %}
+<div class="card pad" style="margin:16px 0;">
+	<h3>Search results for "{{ q }}"</h3>
+	<ul style="list-style:none; padding:0; margin:0;">
+		{% for u in results %}
+		<li style="border-top:1px solid #eee; padding:10px 0;" class="row" style="justify-content:space-between;">
+			<a href="/u/{{ u.username }}">{{ u.get_full_name|default:u.username }}</a>
+			<a href="/connect/send/{{ u.id }}"><button>Connect</button></a>
+		</li>
+		{% empty %}
+		<li class="muted">No results.</li>
+		{% endfor %}
+	</ul>
+</div>
+{% endblock %}
+
+

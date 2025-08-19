@@ -1,0 +1,318 @@
+{% extends 'base.html' %}
+
+{% block title %}Me — LinkedIn Clone{% endblock %}
+
+{% block head %}
+<style>
+/* Comment modal */
+.comment-modal { width:min(600px, 90vw); max-height:80vh; overflow-y:auto; }
+.comment-item { border-bottom:1px solid #eee; padding:12px 0; }
+.comment-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+.comment-author { font-weight:600; font-size:14px; }
+.comment-time { color:#666; font-size:12px; }
+.comment-text { margin-bottom:8px; }
+.reply-section { margin-left:20px; border-left:2px solid #eee; padding-left:12px; }
+.reply-item { margin:8px 0; }
+.reply-form { margin-top:8px; }
+.reply-form input { width:100%; padding:8px; border:1px solid #ddd; border-radius:4px; }
+.reply-form button { margin-top:4px; padding:4px 8px; background:#0a66c2; color:white; border:none; border-radius:4px; cursor:pointer; }
+
+/* Reaction counts */
+.reaction-counts { display:flex; gap:8px; margin:8px 0; font-size:12px; color:#666; }
+.reaction-count { display:flex; align-items:center; gap:4px; }
+
+/* Modal create-post */
+.modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; z-index:1000; }
+.modal { width:min(720px, 92vw); background:#fff; border:1px solid #e5e5e5; border-radius:12px; overflow:hidden; }
+.modal-header { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid #eee; }
+.modal-body { padding:12px 16px; }
+.modal-footer { display:flex; justify-content:space-between; align-items:center; padding:12px 16px; border-top:1px solid #eee; }
+.icon-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 10px; border-radius:8px; border:1px solid #e5e5e5; background:#fff; cursor:pointer; }
+.icon { width:20px; height:20px; display:inline-block; border-radius:4px; }
+.icon.photo { background:#0a66c2; }
+.icon.video { background:#27ae60; }
+.close-x { cursor:pointer; font-size:22px; line-height:22px; padding:4px; }
+.pill { border:1px solid #ddd; border-radius:999px; padding:4px 10px; }
+.hidden { display:none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="layout" style="display:grid; grid-template-columns:1fr 320px; gap:16px; margin:16px 0;">
+	<section>
+		<div class="card pad">
+			<h2>{{ request.user.get_full_name|default:request.user.username }}</h2>
+			<div class="muted">{{ request.user.headline }}</div>
+			<div style="margin-top:12px; white-space:pre-wrap;">{{ request.user.bio }}</div>
+			<div class="row" style="margin-top:12px;">
+				<button onclick="openPostModal()">New post</button>
+			</div>
+		</div>
+		<div class="card pad" style="margin-top:12px;">
+			<h3>Posts</h3>
+			<ul style="list-style:none; padding:0; margin:0;">
+				{% for p in my_posts %}
+				<li style="border-top:1px solid #eee; padding:12px 0;">
+					{% if p.repost_of %}
+					<div class="muted" style="font-size:12px; margin-bottom:4px;">You reposted this</div>
+					{% endif %}
+					<div class="muted" style="font-size:12px;">{{ p.created_at }}</div>
+					<div style="margin-top:6px;">{{ p.text }}</div>
+					{% if p.media and p.media.0 %}
+						{% if p.media.0.type == 'photo' %}
+							<img src="{{ p.media.0.url }}" alt="post media" style="max-width:100%; border-radius:8px; margin-top:8px;" />
+						{% elif p.media.0.type == 'video' %}
+							<video src="{{ p.media.0.url }}" controls style="max-width:100%; border-radius:8px; margin-top:8px;"></video>
+						{% endif %}
+					{% endif %}
+					
+					<!-- Reaction counts -->
+					<div class="reaction-counts">
+						{% if p.get_reaction_count > 0 %}
+						<span class="reaction-count">👍 {{ p.get_reaction_count }} reactions</span>
+						{% endif %}
+						{% if p.get_comment_count > 0 %}
+						<span class="reaction-count">💬 {{ p.get_comment_count }} comments</span>
+						{% endif %}
+						{% if p.get_repost_count > 0 %}
+						<span class="reaction-count">🔄 {{ p.get_repost_count }} reposts</span>
+						{% endif %}
+					</div>
+					
+					<div class="row" style="gap:10px; margin-top:8px;">
+						<form method="post" action="/p/{{ p.id }}/react">
+							{% csrf_token %}
+							<input type="hidden" name="kind" value="like" />
+							{% if p.my_reaction_kind == 'like' %}
+							<button type="submit" style="background:#0a66c2; color:#fff;">Liked</button>
+							{% else %}
+							<button type="submit" class="ghost">Like</button>
+							{% endif %}
+						</form>
+						<button class="ghost" onclick="openCommentsModal({{ p.id }})">Comment</button>
+						<form method="post" action="/p/{{ p.id }}/repost" style="display:inline;">
+							{% csrf_token %}
+							<button type="submit" class="ghost">Repost</button>
+						</form>
+					</div>
+				</li>
+				{% empty %}
+				<li class="muted">No posts yet.</li>
+				{% endfor %}
+			</ul>
+		</div>
+	</section>
+	<aside>
+		<div class="card pad">
+			<h3>Analytics</h3>
+			<div class="muted">Profile viewers — 0</div>
+			<div class="muted">Post impressions — 0</div>
+		</div>
+	</aside>
+</div>
+
+<!-- Create Post Modal -->
+<div id="postModal" class="modal-backdrop">
+	<div class="modal">
+		<div class="modal-header">
+			<div class="row" style="gap:10px; align-items:center;">
+				<div style="width:48px; height:48px; border-radius:50%; background:#ddd;"></div>
+				<div>
+					<div style="font-weight:600;">{{ request.user.username }}</div>
+					<select form="postForm" name="visibility" class="pill">
+						<option value="public">Anyone</option>
+						<option value="connections">Connections</option>
+						<option value="private">Only me</option>
+					</select>
+				</div>
+			</div>
+			<div class="close-x" onclick="closePostModal()">×</div>
+		</div>
+		<form id="postForm" method="post" enctype="multipart/form-data">
+			{% csrf_token %}
+			<input type="hidden" name="action" value="create_post" />
+			<input type="hidden" id="media_kind" name="media_kind" value="none" />
+			<div class="modal-body">
+				<textarea name="text" id="post_textarea" placeholder="What do you want to talk about?" rows="5" style="width:100%; border:none; outline:none; resize:vertical;"></textarea>
+				<div class="row" style="margin-top:8px; gap:8px;">
+					<input name="tags" placeholder="Add hashtags (comma separated)" />
+				</div>
+				<div id="media_preview" class="hidden" style="margin-top:10px;"></div>
+				<input type="file" id="media_file" name="media_file" class="hidden" />
+			</div>
+			<div class="modal-footer">
+				<div class="row" style="gap:8px;">
+					<button type="button" class="icon-btn" onclick="chooseMedia('photo')"><span class="icon photo"></span> Photo</button>
+					<button type="button" class="icon-btn" onclick="chooseMedia('video')"><span class="icon video"></span> Video</button>
+					<button type="button" class="icon-btn" onclick="clearMedia()">None</button>
+				</div>
+				<button id="post_submit" type="submit" disabled>Post</button>
+			</div>
+		</form>
+	</div>
+</div>
+
+<!-- Comments Modal -->
+<div id="commentsModal" class="modal-backdrop">
+	<div class="modal comment-modal">
+		<div class="modal-header">
+			<h3>Comments</h3>
+			<div class="close-x" onclick="closeCommentsModal()">×</div>
+		</div>
+		<div class="modal-body">
+			<div id="commentsList"></div>
+			<div style="margin-top:16px; border-top:1px solid #eee; padding-top:16px;">
+				<form id="commentForm" onsubmit="submitComment(event)">
+					<input type="hidden" id="commentPostId" />
+					<input type="text" id="commentText" placeholder="Write a comment..." style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;" />
+					<button type="submit" style="margin-top:8px; padding:8px 16px; background:#0a66c2; color:white; border:none; border-radius:4px; cursor:pointer;">Comment</button>
+				</form>
+			</div>
+		</div>
+	</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Modal logic
+const modal = document.getElementById('postModal');
+const mediaFile = document.getElementById('media_file');
+const mediaKind = document.getElementById('media_kind');
+const mediaPreview = document.getElementById('media_preview');
+const postSubmit = document.getElementById('post_submit');
+const postTextarea = document.getElementById('post_textarea');
+
+function openPostModal(kind){ if(modal){ modal.style.display='flex'; if(kind){ chooseMedia(kind); } updatePostEnabled(); } }
+function closePostModal(){ if(modal){ modal.style.display='none'; clearMedia(); postTextarea.value=''; updatePostEnabled(); } }
+function chooseMedia(kind){ mediaKind.value = kind; if(kind==='photo'){ mediaFile.accept='image/*'; } else if(kind==='video'){ mediaFile.accept='video/*'; } mediaFile.click(); }
+function clearMedia(){ mediaKind.value='none'; mediaFile.value=''; mediaPreview.classList.add('hidden'); mediaPreview.innerHTML=''; updatePostEnabled(); }
+mediaFile && mediaFile.addEventListener('change', () => { if(mediaFile.files && mediaFile.files[0]){ mediaPreview.classList.remove('hidden'); mediaPreview.innerHTML = `<div class="muted">Selected: ${mediaFile.files[0].name}</div>`; } else { mediaPreview.classList.add('hidden'); mediaPreview.innerHTML=''; } updatePostEnabled(); });
+postTextarea && postTextarea.addEventListener('input', updatePostEnabled);
+function updatePostEnabled(){ const hasText = postTextarea && postTextarea.value.trim().length>0; const hasMedia = mediaFile && mediaFile.files && mediaFile.files.length>0; postSubmit && (postSubmit.disabled = !(hasText || hasMedia)); }
+
+// Comments modal logic
+const commentsModal = document.getElementById('commentsModal');
+const commentsList = document.getElementById('commentsList');
+const commentPostId = document.getElementById('commentPostId');
+const commentText = document.getElementById('commentText');
+
+function openCommentsModal(postId) {
+	commentPostId.value = postId;
+	commentsModal.style.display = 'flex';
+	loadComments(postId);
+}
+
+function closeCommentsModal() {
+	commentsModal.style.display = 'none';
+	commentsList.innerHTML = '';
+	commentText.value = '';
+}
+
+async function loadComments(postId) {
+	try {
+		const response = await fetch(`/p/${postId}/comments`);
+		const data = await response.json();
+		displayComments(data.comments);
+	} catch (error) {
+		console.error('Error loading comments:', error);
+	}
+}
+
+function displayComments(comments) {
+	commentsList.innerHTML = '';
+	if (comments.length === 0) {
+		commentsList.innerHTML = '<div class="muted">No comments yet. Be the first to comment!</div>';
+		return;
+	}
+	
+	comments.forEach(comment => {
+		const commentDiv = document.createElement('div');
+		commentDiv.className = 'comment-item';
+		commentDiv.innerHTML = `
+			<div class="comment-header">
+				<span class="comment-author">${comment.full_name}</span>
+				<span class="comment-time">${new Date(comment.created_at).toLocaleString()}</span>
+			</div>
+			<div class="comment-text">${comment.text}</div>
+			<div class="reply-section">
+				${comment.replies.map(reply => `
+					<div class="reply-item">
+						<div class="comment-header">
+							<span class="comment-author">${reply.full_name}</span>
+							<span class="comment-time">${new Date(reply.created_at).toLocaleString()}</span>
+						</div>
+						<div class="comment-text">${reply.text}</div>
+					</div>
+				`).join('')}
+				<div class="reply-form">
+					<input type="text" placeholder="Reply to ${comment.full_name}..." onkeypress="handleReplyKeypress(event, ${comment.id})" />
+					<button onclick="submitReply(${comment.id}, event)">Reply</button>
+				</div>
+			</div>
+		`;
+		commentsList.appendChild(commentDiv);
+	});
+}
+
+function handleReplyKeypress(event, commentId) {
+	if (event.key === 'Enter') {
+		submitReply(commentId, event);
+	}
+}
+
+async function submitComment(event) {
+	event.preventDefault();
+	const postId = commentPostId.value;
+	const text = commentText.value.trim();
+	
+	if (!text) return;
+	
+	try {
+		const response = await fetch(`/p/${postId}/comment`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded',
+				'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+			},
+			body: `text=${encodeURIComponent(text)}`
+		});
+		
+		if (response.ok) {
+			commentText.value = '';
+			loadComments(postId);
+		}
+	} catch (error) {
+		console.error('Error submitting comment:', error);
+	}
+}
+
+async function submitReply(commentId, event) {
+	const replyInput = event.target.previousElementSibling;
+	const text = replyInput.value.trim();
+	
+	if (!text) return;
+	
+	try {
+		const postId = commentPostId.value;
+		const response = await fetch(`/p/${postId}/reply`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded',
+				'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+			},
+			body: `comment_id=${commentId}&text=${encodeURIComponent(text)}`
+		});
+		
+		if (response.ok) {
+			replyInput.value = '';
+			loadComments(postId);
+		}
+	} catch (error) {
+		console.error('Error submitting reply:', error);
+	}
+}
+</script>
+{% endblock %}
+
+

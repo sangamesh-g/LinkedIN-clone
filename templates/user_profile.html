@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ u.username }} — Profile{% endblock %}
+
+{% block content %}
+<div class="layout" style="display:grid; grid-template-columns:1fr 320px; gap:16px; margin:16px 0;">
+	<section>
+		<div class="card pad">
+			<h2>{{ u.get_full_name|default:u.username }}</h2>
+			<div class="muted">{{ u.headline }}</div>
+			<div style="margin-top:8px;">
+				{% if connection_status == 'none' %}
+					<a href="/connect/send/{{ u.id }}"><button>Connect</button></a>
+				{% elif connection_status == 'pending' %}
+					<span class="muted">Invitation pending</span>
+				{% elif connection_status == 'accepted' %}
+					<a href="/messaging?user_id={{ u.id }}"><button>Message</button></a>
+				{% else %}
+					<span class="muted">{{ connection_status }}</span>
+				{% endif %}
+			</div>
+		</div>
+		<div class="card pad" style="margin-top:12px;">
+			<h3>Posts</h3>
+			<ul style="list-style:none; padding:0; margin:0;">
+				{% for p in posts %}
+				<li style="border-top:1px solid #eee; padding:12px 0;">
+					<div class="muted" style="font-size:12px;">{{ p.created_at }}</div>
+					<div style="margin-top:6px;">{{ p.text }}</div>
+					{% if p.media and p.media.0 %}
+						{% if p.media.0.type == 'photo' %}
+							<img src="{{ p.media.0.url }}" alt="post media" style="max-width:100%; border-radius:8px; margin-top:8px;" />
+						{% elif p.media.0.type == 'video' %}
+							<video src="{{ p.media.0.url }}" controls style="max-width:100%; border-radius:8px; margin-top:8px;"></video>
+						{% endif %}
+					{% endif %}
+				</li>
+				{% empty %}
+				<li class="muted">No posts yet.</li>
+				{% endfor %}
+			</ul>
+		</div>
+	</section>
+	<aside>
+		<div class="card pad">
+			<h3>About</h3>
+			<div class="muted">{{ u.location }}</div>
+			<div style="margin-top:8px; white-space:pre-wrap;">{{ u.bio }}</div>
+		</div>
+	</aside>
+</div>
+{% endblock %}
+
+

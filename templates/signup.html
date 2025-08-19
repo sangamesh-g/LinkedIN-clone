@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}Sign up — LinkedIn Clone{% endblock %}
+
+{% block content %}
+<div class="card pad" style="max-width:520px; margin:40px auto;">
+	<h2>Create your account</h2>
+	{% if errors %}
+		<div class="muted" style="color:#b00020;">
+			{% for field, msgs in errors.items %}
+				<div>{{ field }}: {{ msgs|join:', ' }}</div>
+			{% endfor %}
+		</div>
+	{% endif %}
+	<form method="post" class="grid" style="gap:8px; margin-top:12px;">
+		{% csrf_token %}
+		<input name="username" placeholder="Username" required />
+		<input name="email" placeholder="Email" type="email" />
+		<div class="row">
+			<input name="first_name" placeholder="First name" />
+			<input name="last_name" placeholder="Last name" />
+		</div>
+		<input name="password" placeholder="Password" type="password" required />
+		<button type="submit">Agree & Join</button>
+	</form>
+	<div class="muted" style="margin-top:12px;">Already have an account? <a href="/signin">Sign in</a></div>
+</div>
+{% endblock %}
+
+
