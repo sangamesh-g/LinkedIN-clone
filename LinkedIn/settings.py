@@ -88,7 +88,6 @@ DATABASES = {
         'NAME': 'TechSnap',
         'USER': 'postgres',
         'PASSWORD': 'Sangamesh',
-        'HOST': 'localhost',
         'PORT': '5432',
     }
 }
