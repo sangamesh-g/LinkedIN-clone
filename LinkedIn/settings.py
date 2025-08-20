@@ -25,12 +25,13 @@ dotenv.load_dotenv(os.path.join(BASE_DIR, "LinkedIn", ".env"))
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-fxk!9a2b)9=%mbsdo0v!5&y)^i=6+a$*exkm5u@^%)9hk@dxh='
+SECRET_KEY = os.environ.get("SECRET_KEY") 
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# DEBUG = True
+DEBUG = os.environ.get("DEBUG") == "True"
 
-ALLOWED_HOSTS = ['.vercel.app',]
+ALLOWED_HOSTS = ['.vercel.app','localhost',]
 
 
 # Application definition
@@ -89,7 +90,7 @@ WSGI_APPLICATION = 'LinkedIn.wsgi.application'
 
 DATABASES = {
     # dj_database_url will automatically look for the DATABASE_URL environment variable.
-    'default': dj_database_url.config()
+    'default': dj_database_url.config(default=os.environ.get("DATABASE_URL"))
 }
 # The commented-out block is for reference if you ever need to connect without an env var.
 #  'default': {
