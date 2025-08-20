@@ -11,10 +11,15 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+import dj_database_url
+import dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Load environment variables from .env file BEFORE they are accessed.
+dotenv.load_dotenv(os.path.join(BASE_DIR, "LinkedIn", ".env"))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -83,15 +88,19 @@ WSGI_APPLICATION = 'LinkedIn.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'TechSnap',
-        'USER': 'postgres',
-        'PASSWORD': 'Sangamesh',
-        'HOST': 'localhost',
-        'PORT': '5432',
-    }
+    # dj_database_url will automatically look for the DATABASE_URL environment variable.
+    'default': dj_database_url.config()
 }
+# The commented-out block is for reference if you ever need to connect without an env var.
+#  'default': {
+#     'ENGINE': 'django.db.backends.postgresql',
+#     'NAME': 'TechSnap',
+#     'USER': 'postgres',
+#     'PASSWORD': 'your_password_here', # Avoid hardcoding passwords
+#     'HOST': 'localhost',
+#     'PORT': '5432',
+# }
+
 
 
 # Password validation
